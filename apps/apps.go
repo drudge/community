@@ -150,6 +150,7 @@ import (
 	"tidbyt.dev/community/apps/njtransit"
 	"tidbyt.dev/community/apps/noaabuoy"
 	"tidbyt.dev/community/apps/noaatides"
+	"tidbyt.dev/community/apps/notifications"
 	"tidbyt.dev/community/apps/nyancat"
 	"tidbyt.dev/community/apps/nycbus"
 	"tidbyt.dev/community/apps/officestatus"
@@ -408,6 +409,7 @@ func GetManifests() []manifest.Manifest {
 		njtransit.New(),
 		noaabuoy.New(),
 		noaatides.New(),
+		notifications.New(),
 		nyancat.New(),
 		nycbus.New(),
 		officestatus.New(),
