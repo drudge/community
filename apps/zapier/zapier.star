@@ -17,6 +17,7 @@ def main(config):
     notification_type = config.str("type", DEFAULT_TYPE)
     icon = MESSAGE_TYPES[notification_type]["icon"]
     alt_color = MESSAGE_TYPES[notification_type]["color"]
+    hide_after = int(config.str("hide_after", DEFAULT_HIDE_AFTER))
 
     # Return if there is no primary text
     if primary == "":
@@ -42,9 +43,10 @@ def main(config):
                 ),
             ),
         )
-
+    
     # Render the full view if there is an alt text.
     return render.Root(
+        max_age = hide_after,
         child = render.Box(
             padding = 2,
             child = render.Column(
@@ -127,12 +129,20 @@ def render_core(primary, secondary, icon):
     )
 
 def get_schema():
-    options = [
+    type_options = [
         schema.Option(
             display = v["name"],
             value = k,
         )
         for k, v in MESSAGE_TYPES.items()
+    ]
+
+    hide_options = [
+        schema.Option(
+            display = v["name"],
+            value = v["seconds"],
+        )
+        for v in HIDE_DURATIONS
     ]
 
     return schema.Schema(
@@ -162,12 +172,22 @@ def get_schema():
                 desc = "The type of notification to display.",
                 icon = "gear",
                 default = DEFAULT_TYPE,
-                options = options,
+                options = type_options,
+            ),
+            schema.Dropdown(
+                id = "hide_after",
+                name = "Hide After",
+                desc = "Hide stale notification after a period of time.",
+                icon = "eyeSlash",
+                default = DEFAULT_HIDE_AFTER,
+                options = hide_options,
             ),
         ],
     )
 
 DEFAULT_TYPE = "generic"
+
+DEFAULT_HIDE_AFTER = "0"
 
 # To add an icon, create a 16x18 pixel png file and run the following and paste
 # the results: cat icon.png | base64 | fold | pbcopy
@@ -179,6 +199,34 @@ qtSAz/A+2EbIt8Q76KMXvgu8Y75ObCWSj/AQnogpHjFoEshwjAnGwUFEP7iY4CRwNwRK3OA04SpihNvA
 XRHIgvK4ITmiCEJZXaCD67pyA8rA7bK8hRbOdkiObou4eXRQ4mNHAar+KOsC33azH1FiVhc4lu6JbWhh
 GBcD3Gto1wT2cYdhjme0/5FMVcgRnnL8YIHf8LPEm82aZDi07MIM7Vx1/myN3EvEWE5nRJnjK0GcBkfR
 RaY6ZrFOTI1zVzWRe2vxharQKy5SVzfHBV5Udz3DK87DegV/vJUy/l4a2gQAAAAASUVORK5CYII=
+"""
+
+INFO_ICON = """
+iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAMAAABl5a5YAAAACVBMVEVHcEz///9Ci/9gpZSBAAAAAXRS
+TlMAQObYZgAAADJJREFUGJVjYCAKMEEBOh8mAmYyMsJFmJAFmFA0IAswYqigXIARDJAcAhfA7nRMz+EH
+AMEBAT4t0yKLAAAAAElFTkSuQmCC
+"""
+
+ERROR_ICON = """
+iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAYAAABSO15qAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAA
+AAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAEKADAAQAAAABAAAAEgAA
+AABOlSKSAAAAjUlEQVQ4EcWSQQ6AIAwE0fgi4f8vAL+kKcmSstByMnDB1p0JpISwex2zA5QY31k/ljLk
+h4YFQ8iSTsDwnXPlnpTA111LmsCCQVqSUwIMA/J2MFXgBVf//hPoO+tvPtHFDV17IHLuFWSMGCUA3qtA
+z5UDVg2mvQMJYjQWhD5gqTuBNFYSDU8FnoRhye5fH+FGMU4i+lapAAAAAElFTkSuQmCC
+"""
+
+SUCCESS_ICON = """
+iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAMAAABl5a5YAAAACVBMVEVHcEz///9NsyBqCqACAAAAAXRS
+TlMAQObYZgAAADpJREFUGJWFjkEOACAMwob/f7QJm6hc4LQ2gawqZv0JAiZgAibIj2im4DU8AuKuAOLZ
+uHxGxel1ipgN6ssBhYFB0JkAAAAASUVORK5CYII=
+"""
+
+BOLT_ICON = """
+iVBORw0KGgoAAAANSUhEUgAAABAAAAASCAMAAABl5a5YAAAAS1BMVEVHcEz///////+VlZX////t7e1t
+bW2AgICzs7Ozs7OSkpKDg4OQkJDw8PDr6+vu7u7v7+/l5eXNzc3k5OTDw8Pp6enW1taUlJTe3t7y5kcZ
+AAAADXRSTlMADgGAA+cHAih2ByEu8eZngwAAAFpJREFUGJWNjkkOgDAMA81aNpey8/+XUrVlSU7MJRrL
+kQz8paF0QxWMdMKXdWf58Y0gs9dn/89I8HDybigO2uhtavaxMXG0nruaqCkdqMBTLKGeqh1OOYwOHi4D
+vgNFn7VV4QAAAABJRU5ErkJggg==
 """
 
 SLACK_ICON = """
@@ -242,12 +290,31 @@ h/kK8GP4hoCuXZoZyMFfjNONJeXH7MQoC5x8LKntelvMQK5IWrC4HUt6cMXzDAKnLr4XsGX9HAI3wBdw
 DCy7npeAvdTAATYD4NEGEwG3VlxzAqsM2hVuEwuWvAOKQCk19SngzZFbxul7C7PAqwG+TSjUph35mt6m
 Djym4Pv03sSMyxXtk3fT+IgJfyh/04ByjCE9lZ0AAAAASUVORK5CYII=
 """
-
 MESSAGE_TYPES = {
     "generic": {
         "name": "Generic",
         "icon": GENERIC_ICON,
         "color": "#7AB0FF",
+    },
+    "info": {
+        "name": "Info",
+        "icon": INFO_ICON,
+        "color": "#428BFF",
+    },
+    "error": {
+        "name": "Error",
+        "icon": ERROR_ICON,
+        "color": "#CD3333",
+    },
+    "success": {
+        "name": "Success",
+        "icon": SUCCESS_ICON,
+        "color": "#4DB320",
+    },
+    "bolt": {
+        "name": "Bolt",
+        "icon": BOLT_ICON,
+        "color": "#5C5C5C",
     },
     "slack": {
         "name": "Slack",
@@ -265,3 +332,39 @@ MESSAGE_TYPES = {
         "color": "#FFFFFF",
     },
 }
+
+HIDE_DURATIONS = [
+    {
+        "name": "Never",
+        "seconds": "-1",
+    },
+    {
+        "name": "1 minute",
+        "seconds": "60",
+    },
+    {
+        "name": "2 minutes",
+        "seconds": "120",
+    },
+    {
+        "name": "5 minutes",
+        "seconds": "300",
+    },
+    {
+        "name": "10 minutes",
+        "seconds": "600",
+
+    },
+    {
+        "name": "30 minutes",
+        "seconds": "1800",
+    },
+    {
+        "name": "1 hour",
+        "seconds": "3600",
+    },
+    {
+        "name": "1 day",
+        "seconds": "86400",
+    },
+]
